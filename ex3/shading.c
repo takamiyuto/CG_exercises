@@ -134,10 +134,10 @@ static void BlinnPhongModel(GLfloat *pe, GLfloat *ne, GLfloat *out_color) {
     GLfloat v[3] = {-pe[0], -pe[1], -pe[2]};
     GLfloat v_norm = sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
     GLfloat r[3];
-    r[0] = -l[0] -2 * ne[0] * (ne[0] * -l[0] + ne[1] * -l[1] + ne[2] * -l[2]);
-    r[1] = -l[1] -2 * ne[1] * (ne[0] * -l[0] + ne[1] * -l[1] + ne[2] * -l[2]);
-    r[2] = -l[2] -2 * ne[2] * (ne[0] * -l[0] + ne[1] * -l[1] + ne[2] * -l[2]);
-   GLfloat r_norm = sqrt(r[0] * r[0] + r[1] * r[1] + r[2] * r[2]);
+    r[0] = -l[0] - 2 * ne[0] * (ne[0] * -l[0] + ne[1] * -l[1] + ne[2] * -l[2]);
+    r[1] = -l[1] - 2 * ne[1] * (ne[0] * -l[0] + ne[1] * -l[1] + ne[2] * -l[2]);
+    r[2] = -l[2] - 2 * ne[2] * (ne[0] * -l[0] + ne[1] * -l[1] + ne[2] * -l[2]);
+    GLfloat r_norm = sqrt(r[0] * r[0] + r[1] * r[1] + r[2] * r[2]);
     r[0] /= r_norm;
     r[1] /= r_norm;
     r[2] /= r_norm;
@@ -166,9 +166,12 @@ static void BlinnPhongModel(GLfloat *pe, GLfloat *ne, GLfloat *out_color) {
         h[1] /= h_norm;
         h[2] /= h_norm;
 
-        out_color[0] += g_mat_spec[0] * g_light_spec[0][0] * pow(clamp(h[0] * ne[0] + h[1] * ne[1] + h[2] * ne[2], 0, INT32_MAX), g_mat_shiny);
-        out_color[1] += g_mat_spec[1] * g_light_spec[0][1] * pow(clamp(h[0] * ne[0] + h[1] * ne[1] + h[2] * ne[2], 0, INT32_MAX), g_mat_shiny);
-        out_color[2] += g_mat_spec[2] * g_light_spec[0][2] * pow(clamp(h[0] * ne[0] + h[1] * ne[1] + h[2] * ne[2], 0, INT32_MAX), g_mat_shiny);
+        out_color[0] += g_mat_spec[0] * g_light_spec[0][0] *
+                        pow(clamp(h[0] * ne[0] + h[1] * ne[1] + h[2] * ne[2], 0, INT32_MAX), g_mat_shiny);
+        out_color[1] += g_mat_spec[1] * g_light_spec[0][1] *
+                        pow(clamp(h[0] * ne[0] + h[1] * ne[1] + h[2] * ne[2], 0, INT32_MAX), g_mat_shiny);
+        out_color[2] += g_mat_spec[2] * g_light_spec[0][2] *
+                        pow(clamp(h[0] * ne[0] + h[1] * ne[1] + h[2] * ne[2], 0, INT32_MAX), g_mat_shiny);
     }
 
 
@@ -304,13 +307,9 @@ static void drawSphere2() {
     g_mat_amb[0] = amb[0];
     g_mat_amb[1] = amb[1];
     g_mat_amb[2] = amb[2];
-    if (g_diffuse) {
-        g_mat_diff[0] = diff[0];
-        g_mat_diff[1] = diff[1];
-        g_mat_diff[2] = diff[2];
-    } else {
-
-    }
+    g_mat_diff[0] = diff[0];
+    g_mat_diff[1] = diff[1];
+    g_mat_diff[2] = diff[2];
     g_mat_spec[0] = spec[0];
     g_mat_spec[1] = spec[1];
     g_mat_spec[2] = spec[2];

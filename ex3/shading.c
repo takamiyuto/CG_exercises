@@ -37,6 +37,8 @@ static int g_gl_shading = 1;
 //Phong or Blinn
 static int g_phong = 1;
 
+// implemented diffuse term and the constant (Lambertian) diffuse
+static int g_diffuse = 1;
 
 // Examples of material colors (sRGB)
 static GLfloat SILVER[] = {0.97f, 0.96f, 0.91f};
@@ -122,38 +124,53 @@ static void BlinnPhongModel(GLfloat *pe, GLfloat *ne, GLfloat *out_color) {
     l[1] /= l_norm;
     l[2] /= l_norm;
     GLfloat diff = ne[0] * l[0] + ne[1] * l[1] + ne[2] * l[2];
+    clamp(diff, 0, INT32_MAX);
     out_color[0] += g_mat_diff[0] * g_light_diff[0][0] * diff;
     out_color[1] += g_mat_diff[1] * g_light_diff[0][1] * diff;
     out_color[2] += g_mat_diff[2] * g_light_diff[0][2] * diff;
 
+
     // スペキュラー成分
     GLfloat v[3] = {-pe[0], -pe[1], -pe[2]};
     GLfloat v_norm = sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
+    GLfloat r[3];
+    r[0] = -l[0] -2 * ne[0] * (ne[0] * -l[0] + ne[1] * -l[1] + ne[2] * -l[2]);
+    r[1] = -l[1] -2 * ne[1] * (ne[0] * -l[0] + ne[1] * -l[1] + ne[2] * -l[2]);
+    r[2] = -l[2] -2 * ne[2] * (ne[0] * -l[0] + ne[1] * -l[1] + ne[2] * -l[2]);
+   GLfloat r_norm = sqrt(r[0] * r[0] + r[1] * r[1] + r[2] * r[2]);
+    r[0] /= r_norm;
+    r[1] /= r_norm;
+    r[2] /= r_norm;
     v[0] /= v_norm;
     v[1] /= v_norm;
     v[2] /= v_norm;
+    GLfloat v_dot_r = clamp(v[0] * r[0] + v[1] * r[1] + v[2] * r[2], 0, INT32_MAX);
     GLfloat h[3];
+
     if (g_phong) {
         // Phong
-        printf("phong\n");
-        h[0] = l[0] + v[0];
-        h[1] = l[1] + v[1];
-        h[2] = l[2] + v[2];
+        int visible = diff > 0 ? 1 : 0;
+        out_color[0] += g_mat_spec[0] * g_light_spec[0][0] * pow(v_dot_r, g_mat_shiny) * visible;
+        out_color[1] += g_mat_spec[1] * g_light_spec[0][1] * pow(v_dot_r, g_mat_shiny) * visible;
+        out_color[2] += g_mat_spec[2] * g_light_spec[0][2] * pow(v_dot_r, g_mat_shiny) * visible;
+
     } else {
         // Blinn
-        printf("blinn\n");
-        h[0] = l[0] + v[0] / 2;
-        h[1] = l[1] + v[1] / 2;
-        h[2] = l[2] + v[2] / 2;
+        GLfloat hv = sqrt(
+                (l[0] + v[0]) * (l[0] + v[0]) + (l[1] + v[1]) * (l[1] + v[1]) + (l[2] + v[2]) * (l[2] + v[2]));
+        h[0] = l[0] + v[0] / hv;
+        h[1] = l[1] + v[1] / hv;
+        h[2] = l[2] + v[2] / hv;
+        GLfloat h_norm = sqrt(h[0] * h[0] + h[1] * h[1] + h[2] * h[2]);
+        h[0] /= h_norm;
+        h[1] /= h_norm;
+        h[2] /= h_norm;
+
+        out_color[0] += g_mat_spec[0] * g_light_spec[0][0] * pow(clamp(h[0] * ne[0] + h[1] * ne[1] + h[2] * ne[2], 0, INT32_MAX), g_mat_shiny);
+        out_color[1] += g_mat_spec[1] * g_light_spec[0][1] * pow(clamp(h[0] * ne[0] + h[1] * ne[1] + h[2] * ne[2], 0, INT32_MAX), g_mat_shiny);
+        out_color[2] += g_mat_spec[2] * g_light_spec[0][2] * pow(clamp(h[0] * ne[0] + h[1] * ne[1] + h[2] * ne[2], 0, INT32_MAX), g_mat_shiny);
     }
-    GLfloat h_norm = sqrt(h[0] * h[0] + h[1] * h[1] + h[2] * h[2]);
-    h[0] /= h_norm;
-    h[1] /= h_norm;
-    h[2] /= h_norm;
-    GLfloat spec = pow(clamp(ne[0] * h[0] + ne[1] * h[1] + ne[2] * h[2], 0, INT32_MAX), g_mat_shiny);
-    out_color[0] += g_mat_spec[0] * g_light_spec[0][0] * spec;
-    out_color[1] += g_mat_spec[1] * g_light_spec[0][1] * spec;
-    out_color[2] += g_mat_spec[2] * g_light_spec[0][2] * spec;
+
 
 }
 
@@ -287,9 +304,13 @@ static void drawSphere2() {
     g_mat_amb[0] = amb[0];
     g_mat_amb[1] = amb[1];
     g_mat_amb[2] = amb[2];
-    g_mat_diff[0] = diff[0];
-    g_mat_diff[1] = diff[1];
-    g_mat_diff[2] = diff[2];
+    if (g_diffuse) {
+        g_mat_diff[0] = diff[0];
+        g_mat_diff[1] = diff[1];
+        g_mat_diff[2] = diff[2];
+    } else {
+
+    }
     g_mat_spec[0] = spec[0];
     g_mat_spec[1] = spec[1];
     g_mat_spec[2] = spec[2];
@@ -403,6 +424,9 @@ static void keyboard(unsigned char key, int x, int y) {
 
         case 'b':
             g_phong = 1 - g_phong;
+            break;
+        case 'd':
+            g_diffuse = 1 - g_diffuse;
             break;
 
         default:

@@ -12,6 +12,9 @@
 
 
 #define _PI 3.14159f
+
+GLfloat roughness = 0.5;
+
 static int g_smooth = 0;
 
 
@@ -39,6 +42,9 @@ static int g_phong = 1;
 
 // implemented diffuse term and the constant (Lambertian) diffuse
 static int g_diffuse = 1;
+
+//turn on and off the light
+static int g_light = 1;
 
 // Examples of material colors (sRGB)
 static GLfloat SILVER[] = {0.97f, 0.96f, 0.91f};
@@ -125,9 +131,6 @@ static void BlinnPhongModel(GLfloat *pe, GLfloat *ne, GLfloat *out_color) {
     l[2] /= l_norm;
     GLfloat diff = ne[0] * l[0] + ne[1] * l[1] + ne[2] * l[2];
     clamp(diff, 0, INT32_MAX);
-    out_color[0] += g_mat_diff[0] * g_light_diff[0][0] * diff;
-    out_color[1] += g_mat_diff[1] * g_light_diff[0][1] * diff;
-    out_color[2] += g_mat_diff[2] * g_light_diff[0][2] * diff;
 
 
     // スペキュラー成分
@@ -174,8 +177,27 @@ static void BlinnPhongModel(GLfloat *pe, GLfloat *ne, GLfloat *out_color) {
                         pow(clamp(h[0] * ne[0] + h[1] * ne[1] + h[2] * ne[2], 0, INT32_MAX), g_mat_shiny);
     }
 
+    //diffuseを足す
+    if (g_diffuse) {
+        out_color[0] += g_mat_diff[0] * g_light_diff[0][0] * diff;
+        out_color[1] += g_mat_diff[1] * g_light_diff[0][1] * diff;
+        out_color[2] += g_mat_diff[2] * g_light_diff[0][2] * diff;
+    } else {
+        GLfloat FD90;
+        GLfloat cosTheta_v = clamp(v[0] * ne[0] + v[1] * ne[1] + v[2] * ne[2], 0, 1);
+        GLfloat cosTheta_l = clamp(l[0] * ne[0] + l[1] * ne[1] + l[2] * ne[2], 0, 1);
+        GLfloat cosTheta_d = clamp(h[0]* l[0] + h[1]* l[1] + h[2]* l[2], 0, 1);
+        FD90 = 0.5f + 2.f* roughness * pow(cosTheta_d, 2);
+        GLfloat thetaTerm = (1.f + (FD90 - 1.f)*pow(1.f - clamp(cosTheta_l, 0.f, cosTheta_l), 5.0)) *
+                    (1.f + (FD90 - 1.f)*pow(1.f - clamp(cosTheta_v, 0.f, cosTheta_v), 5.0));
+        out_color[0] += g_mat_diff[0] * thetaTerm;
+        out_color[1] += g_mat_diff[1] * thetaTerm;
+        out_color[2] += g_mat_diff[2] * thetaTerm;
+
+    }
 
 }
+
 
 // Define a sphere
 //
@@ -426,6 +448,13 @@ static void keyboard(unsigned char key, int x, int y) {
             break;
         case 'd':
             g_diffuse = 1 - g_diffuse;
+            break;
+        case 'l':
+            g_light = 1 - g_light;
+            if (g_light)
+                glEnable(GL_LIGHT0);
+            else
+                glDisable(GL_LIGHT0);
             break;
 
         default:

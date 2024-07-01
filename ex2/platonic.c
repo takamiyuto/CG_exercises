@@ -209,13 +209,15 @@ static void display(void) {
         // After completing the code of myPerspective() above,
         // replace the call to gluPerspective with a call to myPerspective
         // or gluPerspective depending on the transformation mode
-        gluPerspective(45.0, (GLdouble) g_width / (GLdouble) g_height, 0.1, 20.0);
+        //gluPerspective(45.0, (GLdouble) g_width / (GLdouble) g_height, 0.1, 20.0);
+        myPerspective(45.0, (GLfloat) g_width / (GLfloat) g_height, 0.1, 20.0);
     } else {
         // Complete:
         // After completing the code of myOrtho() above,
         // replace the call to glOrtho with a call to myOrtho
         // or glOrtho depending on the transformation mode
-        glOrtho(-2.0, 2.0, -2.0, 2.0, -10.0, 10.0);
+        //glOrtho(-2.0, 2.0, -2.0, 2.0, -10.0, 10.0);
+        myOrtho(-2.0, 2.0, -2.0, 2.0, -10.0, 10.0);
     }
 
     // Modelview transformation

@@ -149,6 +149,15 @@ static void BlinnPhongModel(GLfloat *pe, GLfloat *ne, GLfloat *out_color) {
     v[2] /= v_norm;
     GLfloat v_dot_r = clamp(v[0] * r[0] + v[1] * r[1] + v[2] * r[2], 0, INT32_MAX);
     GLfloat h[3];
+    GLfloat hv = sqrt(
+            (l[0] + v[0]) * (l[0] + v[0]) + (l[1] + v[1]) * (l[1] + v[1]) + (l[2] + v[2]) * (l[2] + v[2]));
+    h[0] = l[0] + v[0] / hv;
+    h[1] = l[1] + v[1] / hv;
+    h[2] = l[2] + v[2] / hv;
+    GLfloat h_norm = sqrt(h[0] * h[0] + h[1] * h[1] + h[2] * h[2]);
+    h[0] /= h_norm;
+    h[1] /= h_norm;
+    h[2] /= h_norm;
 
     if (g_phong) {
         // Phong
@@ -159,16 +168,6 @@ static void BlinnPhongModel(GLfloat *pe, GLfloat *ne, GLfloat *out_color) {
 
     } else {
         // Blinn
-        GLfloat hv = sqrt(
-                (l[0] + v[0]) * (l[0] + v[0]) + (l[1] + v[1]) * (l[1] + v[1]) + (l[2] + v[2]) * (l[2] + v[2]));
-        h[0] = l[0] + v[0] / hv;
-        h[1] = l[1] + v[1] / hv;
-        h[2] = l[2] + v[2] / hv;
-        GLfloat h_norm = sqrt(h[0] * h[0] + h[1] * h[1] + h[2] * h[2]);
-        h[0] /= h_norm;
-        h[1] /= h_norm;
-        h[2] /= h_norm;
-
         out_color[0] += g_mat_spec[0] * g_light_spec[0][0] *
                         pow(clamp(h[0] * ne[0] + h[1] * ne[1] + h[2] * ne[2], 0, INT32_MAX), g_mat_shiny);
         out_color[1] += g_mat_spec[1] * g_light_spec[0][1] *
@@ -186,14 +185,19 @@ static void BlinnPhongModel(GLfloat *pe, GLfloat *ne, GLfloat *out_color) {
         GLfloat FD90;
         GLfloat cosTheta_v = clamp(v[0] * ne[0] + v[1] * ne[1] + v[2] * ne[2], 0, 1);
         GLfloat cosTheta_l = clamp(l[0] * ne[0] + l[1] * ne[1] + l[2] * ne[2], 0, 1);
-        GLfloat cosTheta_d = clamp(h[0]* l[0] + h[1]* l[1] + h[2]* l[2], 0, 1);
-        FD90 = 0.5f + 2.f* roughness * pow(cosTheta_d, 2);
-        GLfloat thetaTerm = (1.f + (FD90 - 1.f)*pow(1.f - clamp(cosTheta_l, 0.f, cosTheta_l), 5.0)) *
-                    (1.f + (FD90 - 1.f)*pow(1.f - clamp(cosTheta_v, 0.f, cosTheta_v), 5.0));
+        GLfloat cosTheta_d = clamp(h[0] * l[0] + h[1] * l[1] + h[2] * l[2], 0, 1);
+        FD90 = 0.5f + 2.f * roughness * pow(cosTheta_d, 2);
+        GLfloat thetaTerm = (1.f + (FD90 - 1.f) * pow(1.f - clamp(cosTheta_l, 0.f, cosTheta_l), 5.0)) *
+                            (1.f + (FD90 - 1.f) * pow(1.f - clamp(cosTheta_v, 0.f, cosTheta_v), 5.0));
         out_color[0] += g_mat_diff[0] * thetaTerm;
         out_color[1] += g_mat_diff[1] * thetaTerm;
         out_color[2] += g_mat_diff[2] * thetaTerm;
 
+    }
+    if(g_light == 0){
+        out_color[0] = 0.f;
+        out_color[1] = 0.f;
+        out_color[2] = 0.f;
     }
 
 }
@@ -364,7 +368,6 @@ static void setLight() {
     glLightfv(GL_LIGHT0, GL_POSITION, pos0);
     glEnable(GL_LIGHT0);
 
-    g_num_lights = 1;
     g_light_amb[0][0] = amb0[0];
     g_light_amb[0][1] = amb0[1];
     g_light_amb[0][2] = amb0[2];
@@ -451,10 +454,14 @@ static void keyboard(unsigned char key, int x, int y) {
             break;
         case 'l':
             g_light = 1 - g_light;
-            if (g_light)
+            if (g_light) {
+                g_num_lights = 1;
                 glEnable(GL_LIGHT0);
-            else
+            } else {
+                g_num_lights = 0;
                 glDisable(GL_LIGHT0);
+            }
+
             break;
 
         default:

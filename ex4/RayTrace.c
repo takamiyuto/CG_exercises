@@ -193,14 +193,18 @@ shade(Vector3 hit_pos, Vector3 hit_normal,
         // Complete
         // specular component
         Vector3 v;
-        v._x = -hit_pos._x;
-        v._y = -hit_pos._y;
-        v._z = -hit_pos._z;
+        //the vector from the intersection to the viewer
+        v._x = scene._camera._x - hit_pos._x;
+        v._y = scene._camera._y - hit_pos._y;
+        v._z = scene._camera._z - hit_pos._z;
+
         normalize(v, &v);
         Vector3 r;
-        r._x = -li._x - 2 *(hit_normal._x * -li._x + hit_normal._y * -li._y + hit_normal._z * -li._z);
-        r._y = -li._y - 2 *(hit_normal._x * -li._x + hit_normal._y * -li._y + hit_normal._z * -li._z);
-        r._z = -li._z - 2 *(hit_normal._x * -li._x + hit_normal._y * -li._y + hit_normal._z * -li._z);
+        //the vector from the intersection to the light source
+        r._x = 2 * diff * hit_normal._x - li._x;
+        r._y = 2 * diff * hit_normal._y - li._y;
+        r._z = 2 * diff * hit_normal._z - li._z;
+
         normalize(r, &r);
         GLfloat spec = r._x * v._x + r._y * v._y + r._z * v._z;
         if(spec<0) spec = 0;

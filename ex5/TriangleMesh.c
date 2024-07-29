@@ -538,3 +538,31 @@ void heatStep(TriangleMesh *tri_mesh) {
 //    mesh->_number_edges = nb;
 //    free(count);
 //}
+void computeBoundaryEdges(TriangleMesh *mesh) {
+    int i, j, k;
+    for (i = 0; i < mesh->_number_triangles; i++) {
+        Triple t = mesh->_triangles[i];
+        int edges[3][2] = {
+            {t._v0, t._v1},
+            {t._v1, t._v2},
+            {t._v2, t._v0}
+        };
+        for(j = 0; j < 3; j++){
+            int v0 = edges[j][0];
+            int v1 = edges[j][1];
+            if(v0 > v1){
+                int tmp = v0;
+                v0 = v1;
+                v1 = tmp;
+            }
+            int is_boundary = 1;
+            int found = 0;
+            for(k=0 ; k< mesh->_number_edges; k++){
+                if(mesh->_edges[k]._v0 == v0 && mesh->_edges[k]._v1 == v1){
+                    found = 1;
+                    break;
+                }
+            }
+        }
+    }
+}
